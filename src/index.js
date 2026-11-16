@@ -3,9 +3,13 @@ import { signToken } from './token.js';
 const enc = new TextEncoder();
 const COOKIE = 'login_state';
 const ok = (body, status = 200, type = 'text/html; charset=utf-8', cache = 'no-store') => new Response(body, { status, headers: { 'content-type': type, 'cache-control': cache, 'x-robots-tag': 'noindex' } });
+// The tab icon travels inline so the Worker needs no static assets; /favicon.ico answers with the same drawing for the
+// browsers and crawlers that ask for it by name.
+const ICON_SVG = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='#0b0b0d'/><path d='M12 8H8v16h4M14 16h10m-4-4 4 4-4 4' fill='none' stroke='#22c55e' stroke-width='3.5'/></svg>";
+const ICON = `data:image/svg+xml,${ICON_SVG.replace(/</g, '%3C').replace(/>/g, '%3E').replace(/#/g, '%23')}`;
 // The sign-in pages carry redirects and state, so they are never stored; /key is a public value that only changes when the
 // signing key is rotated, so a site may reuse it for a few minutes instead of asking the Worker on every check.
-const PAGE = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+const PAGE = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="${ICON}">`;
 
 // Which pages may a visitor be sent back to: https on a flisk.si site. pages.flisk.si is left out on purpose, because
 // visitors publish their own pages there. Local dev (http://localhost) only when ALLOW_LOCAL=1.
@@ -36,6 +40,7 @@ export async function handle(req, env, deps = {}) {
 
   if (url.pathname === '/key') return ok(env.PUBLIC_KEY || '', 200, 'text/plain', 'public, max-age=300');
   if (url.pathname === '/') return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
+  if (url.pathname === '/favicon.ico') return ok(ICON_SVG, 200, 'image/svg+xml', 'public, max-age=86400');
 
   if (url.pathname === '/start') {
     const back = allowedReturn(url.searchParams.get('return'), env);

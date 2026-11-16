@@ -99,6 +99,14 @@ describe('sign-in flow', () => {
       expect(html).toContain('name="viewport"');
     }
   });
+  test('the landing and error pages declare an icon, and /favicon.ico is not a 404', async () => {
+    for (const r of [await get('/'), await get('/start?return=https://evil.com/')]) {
+      expect(await r.text()).toContain('rel="icon"');
+    }
+    const icon = await get('/favicon.ico');
+    expect([200, 204]).toContain(icon.status);
+    if (icon.status === 200) expect(icon.headers.get('content-type')).toContain('image/');
+  });
 });
 
 describe('tokens', () => {
