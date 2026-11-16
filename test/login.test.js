@@ -82,6 +82,23 @@ describe('sign-in flow', () => {
   test('the public key is published at /key', async () => {
     expect(await (await get('/key')).text()).toBe(keys.publicKey);
   });
+  test('/key is cacheable, while every sign-in route stays no-store', async () => {
+    const key = await get('/key');
+    const cache = key.headers.get('cache-control');
+    expect(cache).toContain('public');
+    expect(Number(/max-age=(\d+)/.exec(cache)[1])).toBeGreaterThanOrEqual(300);
+    expect(await key.text()).toBe(keys.publicKey);
+    for (const path of ['/', '/start?return=https://grow.flisk.si/', '/callback?code=c&state=x', '/start?return=https://evil.com/']) {
+      expect((await get(path)).headers.get('cache-control')).toBe('no-store');
+    }
+  });
+  test('the landing and error pages declare a language and a viewport', async () => {
+    for (const r of [await get('/'), await get('/start?return=https://evil.com/')]) {
+      const html = await r.text();
+      expect(html).toContain('lang="en"');
+      expect(html).toContain('name="viewport"');
+    }
+  });
 });
 
 describe('tokens', () => {

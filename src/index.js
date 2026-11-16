@@ -2,7 +2,10 @@ import { signToken } from './token.js';
 
 const enc = new TextEncoder();
 const COOKIE = 'login_state';
-const ok = (body, status = 200, type = 'text/html; charset=utf-8') => new Response(body, { status, headers: { 'content-type': type, 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+const ok = (body, status = 200, type = 'text/html; charset=utf-8', cache = 'no-store') => new Response(body, { status, headers: { 'content-type': type, 'cache-control': cache, 'x-robots-tag': 'noindex' } });
+// The sign-in pages carry redirects and state, so they are never stored; /key is a public value that only changes when the
+// signing key is rotated, so a site may reuse it for a few minutes instead of asking the Worker on every check.
+const PAGE = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
 
 // Which pages may a visitor be sent back to: https on a flisk.si site. pages.flisk.si is left out on purpose, because
 // visitors publish their own pages there. Local dev (http://localhost) only when ALLOW_LOCAL=1.
@@ -24,15 +27,15 @@ async function hmac(secret, text) {
 const cookieOf = (req) => new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`).exec(req.headers.get('cookie') || '')?.[1] || '';
 const stateCookie = (value, age) => `${COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const rand = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
-const fail = (why) => ok(`<!doctype html><meta charset="utf-8"><title>Sign-in failed</title><p>Sign-in did not work: ${why}. Go back to the site and try again.</p>`, 400);
+const fail = (why) => ok(`${PAGE}<title>Sign-in failed</title><p>Sign-in did not work: ${why}. Go back to the site and try again.</p>`, 400);
 
 export async function handle(req, env, deps = {}) {
   const fetchImpl = deps.fetch || fetch;
   const now = deps.now ?? Date.now();
   const url = new URL(req.url);
 
-  if (url.pathname === '/key') return ok(env.PUBLIC_KEY || '', 200, 'text/plain');
-  if (url.pathname === '/') return ok('<!doctype html><meta charset="utf-8"><title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>');
+  if (url.pathname === '/key') return ok(env.PUBLIC_KEY || '', 200, 'text/plain', 'public, max-age=300');
+  if (url.pathname === '/') return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
 
   if (url.pathname === '/start') {
     const back = allowedReturn(url.searchParams.get('return'), env);
