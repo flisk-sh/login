@@ -40,6 +40,24 @@ export async function handle(req, env, deps = {}) {
 
   if (url.pathname === '/key') return ok(env.PUBLIC_KEY || '', 200, 'text/plain', 'public, max-age=300');
   if (url.pathname === '/') return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
+
+  if (url.pathname === "/llms.txt") {
+    const content = `# Flisk Login
+
+Flisk Login provides GitHub-based sign-in for Flisk services.
+
+## Main Website
+- https://flisk.sh/
+
+## Flisk Services
+- https://grow.flisk.si/
+- https://chat.flisk.si/
+- https://learn.flisk.si/
+`;
+    return ok(content, 200, "text/plain", "public, max-age=3600");
+  }
+
+
   if (url.pathname === '/favicon.ico') return ok(ICON_SVG, 200, 'image/svg+xml', 'public, max-age=86400');
 
   if (url.pathname === '/start') {
