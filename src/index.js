@@ -39,7 +39,19 @@ export async function handle(req, env, deps = {}) {
   const url = new URL(req.url);
 
   if (url.pathname === '/key') return ok(env.PUBLIC_KEY || '', 200, 'text/plain', 'public, max-age=300');
-  if (url.pathname === '/') return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
+  if (url.pathname === '/') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return new Response('Method Not Allowed', {
+        status: 405,
+        headers: {
+          'Allow': 'GET, HEAD',
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      });
+    }
+
+    return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
+  }
   if (url.pathname === '/favicon.ico') return ok(ICON_SVG, 200, 'image/svg+xml', 'public, max-age=86400');
 
   if (url.pathname === '/start') {
