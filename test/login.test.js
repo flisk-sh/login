@@ -135,4 +135,32 @@ describe('tokens', () => {
     expect(await verifyToken(t, (await makeKeys()).publicKey, 'https://grow.flisk.si')).toBeNull();
     for (const junk of ['', 'a', 'a.b', '...', undefined]) expect(await verifyToken(junk, keys.publicKey, 'https://grow.flisk.si')).toBeNull();
   });
+
+  // signToken fixes the field types, so sign an arbitrary payload the way a forger or buggy issuer would.
+  async function signPayload(payload) {
+    const b64u = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const raw = (s) => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    const encoded = b64u(new TextEncoder().encode(JSON.stringify(payload)));
+    const key = await crypto.subtle.importKey('pkcs8', raw(keys.signingKey), 'Ed25519', false, ['sign']);
+    const sig = await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(encoded));
+    return `${encoded}.${b64u(sig)}`;
+  }
+
+  test('every field check in verifyToken rejects a signed payload with a bad field', async () => {
+    const audience = 'https://grow.flisk.si';
+    const valid = { login: 'a', id: 42, aud: audience, iat: 1_000_000, exp: 1_000_000 + TOKEN_SECONDS };
+    const NOW = 1_000_000_000;
+    const bad = [
+      { ...valid, aud: 'https://chat.flisk.si' },
+      { ...valid, login: 7 },
+      { ...valid, id: 1.5 },
+      { ...valid, id: '1' },
+      { ...valid, exp: undefined },
+      { ...valid, exp: 'soon' },
+    ];
+    for (const payload of bad) {
+      expect(await verifyToken(await signPayload(payload), keys.publicKey, audience, NOW)).toBeNull();
+    }
+    expect(await verifyToken(await signPayload(valid), keys.publicKey, audience, NOW)).toEqual({ login: 'a', id: 42 });
+  });
 });
