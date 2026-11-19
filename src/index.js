@@ -1,4 +1,5 @@
 import { signToken } from './token.js';
+import { withSecurityHeaders } from './security-headers.js';
 
 const enc = new TextEncoder();
 const COOKIE = 'login_state';
@@ -52,6 +53,22 @@ export async function handle(req, env, deps = {}) {
 
     return ok(`${PAGE}<title>Flisk Login</title><p>One sign-in for every Flisk site. Open a Flisk site and press Sign in.</p>`);
   }
+  if (url.pathname === "/llms.txt") {
+    const content = `# Flisk Login
+
+Flisk Login provides GitHub-based sign-in for Flisk services.
+
+## Main Website
+- https://flisk.sh/
+
+## Flisk Services
+- https://grow.flisk.si/
+- https://chat.flisk.si/
+- https://learn.flisk.si/
+`;
+    return ok(content, 200, "text/plain", "public, max-age=3600");
+  }
+
   if (url.pathname === '/favicon.ico') return ok(ICON_SVG, 200, 'image/svg+xml', 'public, max-age=86400');
 
   if (url.pathname === '/start') {
@@ -90,4 +107,6 @@ export async function handle(req, env, deps = {}) {
   return ok('not found', 404, 'text/plain');
 }
 
-export default { fetch: (req, env, ctx) => handle(req, env) };
+// Every response carries the baseline security headers (see security-headers.js). A header a route sets itself, such as the
+// callback's no-referrer, is kept.
+export default { fetch: async (req, env, ctx) => withSecurityHeaders(await handle(req, env)) };

@@ -123,6 +123,18 @@ describe('sign-in flow', () => {
       expect((await get(path)).headers.get('cache-control')).toBe('no-store');
     }
   });
+
+  test("/llms.txt returns a cacheable plain-text description of Flisk Login", async () => {
+    const response = await get("/llms.txt");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/plain");
+    const body = await response.text();
+    expect(body).toContain("Flisk Login");
+    expect(body.length).toBeGreaterThan(0);
+    const cache = response.headers.get("cache-control");
+    expect(cache).toBeTruthy();
+  });
+
   test('the landing and error pages declare a language and a viewport', async () => {
     for (const r of [await get('/'), await get('/start?return=https://evil.com/')]) {
       const html = await r.text();
