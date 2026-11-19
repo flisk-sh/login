@@ -104,11 +104,16 @@ describe('sign-in flow', () => {
     expect(cache).toBeTruthy();
   });
 
-  test('the landing and error pages declare a language and a viewport', async () => {
+  test('the landing and error pages declare a language, viewport and description', async () => {
     for (const r of [await get('/'), await get('/start?return=https://evil.com/')]) {
       const html = await r.text();
       expect(html).toContain('lang="en"');
       expect(html).toContain('name="viewport"');
+      const description = /<meta name="description" content="([^"]+)">/.exec(html);
+      expect(description).toBeTruthy();
+      expect(description[1].length).toBeGreaterThan(50);
+      expect(description[1].length).toBeLessThan(160);
+      expect(description[1]).toContain('One GitHub sign-in');
     }
   });
   test('the landing and error pages declare an icon, and /favicon.ico is not a 404', async () => {
