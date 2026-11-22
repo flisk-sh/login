@@ -10,7 +10,7 @@ const ICON_SVG = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><r
 const ICON = `data:image/svg+xml,${ICON_SVG.replace(/</g, '%3C').replace(/>/g, '%3E').replace(/#/g, '%23')}`;
 // The sign-in pages carry redirects and state, so they are never stored; /key is a public value that only changes when the
 // signing key is rotated, so a site may reuse it for a few minutes instead of asking the Worker on every check.
-const PAGE = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="${ICON}">`;
+const PAGE = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="One GitHub sign-in for every Flisk site. Open a Flisk site and press Sign in to return with a token scoped only to that site."><link rel="icon" href="${ICON}">`;
 
 // Which pages may a visitor be sent back to: https on a flisk.si site. pages.flisk.si is left out on purpose, because
 // visitors publish their own pages there. Local dev (http://localhost) only when ALLOW_LOCAL=1.
