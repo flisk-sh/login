@@ -21,6 +21,37 @@ async function signIn(returnTo, login = 'odykyi', deps = {}) {
   return get(`/callback?code=c&state=${state}`, env, { fetch: github(login), ...deps }, cookie);
 }
 
+
+describe('HTTP methods', () => {
+  // These methods should not be allowed on the homepage.
+  for (const method of ['POST', 'PUT', 'DELETE']) {
+    test(`${method} to homepage returns 405`, async () => {
+      const req = new Request('https://login.flisk.si/', {
+        method,
+      });
+
+      const response = await handle(req, env);
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get('allow')).toBe('GET, HEAD');
+    });
+  }
+
+  // These methods should continue working.
+  for (const method of ['GET', 'HEAD']) {
+    test(`${method} to homepage returns 200`, async () => {
+      const req = new Request('https://login.flisk.si/', {
+        method,
+      });
+
+      const response = await handle(req, env);
+
+      expect(response.status).toBe(200);
+    });
+  }
+});
+
+
 describe('where a visitor may be sent back', () => {
   test.each([
     'https://grow.flisk.si/auth/done', 'https://chat.flisk.si/', 'https://learn.flisk.si/x?y=1',
@@ -104,11 +135,16 @@ describe('sign-in flow', () => {
     expect(cache).toBeTruthy();
   });
 
-  test('the landing and error pages declare a language and a viewport', async () => {
+  test('the landing and error pages declare a language, viewport and description', async () => {
     for (const r of [await get('/'), await get('/start?return=https://evil.com/')]) {
       const html = await r.text();
       expect(html).toContain('lang="en"');
       expect(html).toContain('name="viewport"');
+      const description = /<meta name="description" content="([^"]+)">/.exec(html);
+      expect(description).toBeTruthy();
+      expect(description[1].length).toBeGreaterThan(50);
+      expect(description[1].length).toBeLessThan(160);
+      expect(description[1]).toContain('One GitHub sign-in');
     }
   });
   test('the landing and error pages declare an icon, and /favicon.ico is not a 404', async () => {
