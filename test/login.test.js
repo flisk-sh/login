@@ -110,6 +110,13 @@ describe('sign-in flow', () => {
     expect((await get(`/callback?code=c&state=${state}`, env, { fetch: async () => Response.json({ error: 'bad_code' }) }, cookie)).status).toBe(400);
     expect((await signIn('https://grow.flisk.si/', 'a b<script>')).status).toBe(400);
   });
+  test('a missing SIGNING_KEY fails the sign-in cleanly instead of throwing', async () => {
+    const s = await get('/start?return=' + encodeURIComponent('https://grow.flisk.si/'));
+    const state = new URL(s.headers.get('location')).searchParams.get('state');
+    const cookie = s.headers.get('set-cookie').split(';')[0];
+    const r = await get(`/callback?code=c&state=${state}`, { ...env, SIGNING_KEY: '' }, { fetch: github('odykyi') }, cookie);
+    expect(r.status).toBe(400);
+  });
   test('the public key is published at /key', async () => {
     expect(await (await get('/key')).text()).toBe(keys.publicKey);
   });

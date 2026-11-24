@@ -93,6 +93,7 @@ export async function handle(req, env, deps = {}) {
     const back = allowedReturn(decodeURIComponent(enc2), env);
     const code = url.searchParams.get('code');
     if (!back || !code || url.searchParams.get('state') !== state) return fail('the sign-in did not match');
+    if (!env.SIGNING_KEY) return fail('login is not set up yet');
     const tok = await fetchImpl('https://github.com/login/oauth/access_token', { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code }) }).then((r) => r.json()).catch(() => null);
     if (!tok?.access_token) return fail('GitHub did not accept the code');
     const gh = await fetchImpl('https://api.github.com/user', { headers: { authorization: `Bearer ${tok.access_token}`, 'user-agent': 'flisk-login', accept: 'application/vnd.github+json' } }).then((r) => r.json()).catch(() => null);
