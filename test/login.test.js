@@ -58,7 +58,7 @@ describe('where a visitor may be sent back', () => {
   ])('allows %s', (u) => expect(allowedReturn(u)?.href).toBe(new URL(u).href));
   test.each([
     'https://evil.com/', 'https://flisk.si.evil.com/', 'https://evil.com/?https://grow.flisk.si', 'http://grow.flisk.si/',
-    'https://pages.flisk.si/@x/y', 'https://user:pw@grow.flisk.si/', 'https://grow.flisk.si:8443/', 'javascript:alert(1)', '', 'https://flisk.si/', 'http://localhost:3000/',
+    'https://pages.flisk.si/@x/y', 'https://acme.flisk.si/', 'https://acme.app.flisk.si/', 'https://chat.flisk.si.wrong.com/', 'https://user:pw@grow.flisk.si/', 'https://grow.flisk.si:8443/', 'javascript:alert(1)', '', 'https://flisk.si/', 'http://localhost:3000/',
   ])('refuses %s', (u) => expect(allowedReturn(u)).toBeNull());
   test('localhost only when dev mode is on', () => {
     expect(allowedReturn('http://localhost:3000/a', { ALLOW_LOCAL: '1' })?.origin).toBe('http://localhost:3000');

@@ -12,15 +12,24 @@ const ICON = `data:image/svg+xml,${ICON_SVG.replace(/</g, '%3C').replace(/>/g, '
 // signing key is rotated, so a site may reuse it for a few minutes instead of asking the Worker on every check.
 const PAGE = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="One GitHub sign-in for every Flisk site. Open a Flisk site and press Sign in to return with a token scoped only to that site."><link rel="icon" href="${ICON}">`;
 
-// Which pages may a visitor be sent back to: https on a flisk.si site. pages.flisk.si is left out on purpose, because
-// visitors publish their own pages there. Local dev (http://localhost) only when ALLOW_LOCAL=1.
-const NEVER = new Set(['pages.flisk.si']);
+// Which pages may a visitor be sent back to: https on an explicit Flisk product origin allowlist.
+// User app origins (*.flisk.si, *.app.flisk.si) are never matched by wildcard.
+// Local dev (http://localhost) only when ALLOW_LOCAL=1.
+const DEFAULT_ALLOWED_ORIGINS = new Set([
+  'https://chat.flisk.si',
+  'https://grow.flisk.si',
+  'https://learn.flisk.si',
+  'https://founder.flisk.si',
+]);
 export function allowedReturn(value, env = {}) {
   let u;
   try { u = new URL(String(value)); } catch { return null; }
   if (u.username || u.password) return null;
   const local = env.ALLOW_LOCAL === '1' && u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1');
-  const flisk = u.protocol === 'https:' && /^([a-z0-9-]+\.)+flisk\.si$/.test(u.hostname) && !NEVER.has(u.hostname) && !u.port;
+  const allowlist = env.ALLOWED_ORIGINS
+    ? new Set(String(env.ALLOWED_ORIGINS).split(',').map((s) => s.trim()).filter(Boolean))
+    : DEFAULT_ALLOWED_ORIGINS;
+  const flisk = u.protocol === 'https:' && !u.port && allowlist.has(u.origin);
   return local || flisk ? u : null;
 }
 
